@@ -1,0 +1,58 @@
+services:
+  mysqlsrv:
+    image: mariadb:10.5
+    container_name: mysqlsrv-1
+    environment:
+      MYSQL_ROOT_PASSWORD: "123"
+      MYSQL_DATABASE: "zabbix"
+      MYSQL_USER: "zabbix"
+      MYSQL_PASSWORD: "zabbix"
+    ports:
+      - "3306:3306"
+    networks:
+      - rdzabbix
+    command: --default-time-zone=SYSTEM --innodb_buffer_pool_size=32M
+
+  adminer:
+    image: adminer
+    container_name: adminer-1
+    ports:
+      - "8080:8080"
+    networks:
+      - rdzabbix
+
+  zabbix-server:
+    image: zabbix/zabbix-server-mysql:alpine-6.4-latest
+    container_name: zabbix-server-1
+    environment:
+      DB_SERVER_HOST: "mysqlsrv-1"
+      MYSQL_DATABASE: "zabbix"
+      MYSQL_USER: "zabbix"
+      MYSQL_PASSWORD: "zabbix"
+      MYSQL_ROOT_PASSWORD: "123"
+    depends_on:
+      - mysqlsrv
+    networks:
+      - rdzabbix
+
+  zabbix-web:
+    image: zabbix/zabbix-web-apache-mysql:alpine-6.4-latest
+    container_name: zabbix-web-1
+    environment:
+      DB_SERVER_HOST: "mysqlsrv-1"
+      MYSQL_DATABASE: "zabbix"
+      MYSQL_USER: "zabbix"
+      MYSQL_PASSWORD: "zabbix"
+      ZBX_SERVER_HOST: "zabbix-server"
+      PHP_TZ: "America/Sao_Paulo"
+    ports:
+      - "8081:8080"
+    depends_on:
+      - mysqlsrv
+      - zabbix-server
+    networks:
+      - rdzabbix
+
+networks:
+  rdzabbix:
+    driver: bridge
